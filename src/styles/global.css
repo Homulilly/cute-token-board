@@ -973,6 +973,9 @@ h2 {
   overflow-x: auto;
   -ms-overflow-style: none; /* IE/Edge */
   scrollbar-width: none; /* Firefox */
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .daily-heatmap::-webkit-scrollbar {
@@ -997,6 +1000,9 @@ h2 {
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 calc(1px + var(--heat, 0) * 3px) calc(2px + var(--heat, 0) * 8px) rgba(76, 60, 44, calc(0.04 + var(--heat, 0) * 0.28));
   transition: transform 0.16s ease, box-shadow 0.16s ease;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 .heat-dot:hover {
@@ -1053,6 +1059,9 @@ h2 {
   pointer-events: none;
   opacity: 0;
   visibility: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
   transform: translateY(4px);
   transition: opacity 0.16s ease, transform 0.16s ease, visibility 0.16s ease;
 }
