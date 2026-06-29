@@ -28,6 +28,14 @@ pnpx ccusage daily -j token-name.json
 
 也可以直接在 `.env` 中配置远程 JSON 地址，例如 `https://api.example.com/tboard/mac.json`。本项目会按字节读取 JSON，并兼容常见的 UTF-8 / UTF-16 BOM 编码；单个设备解析失败时会跳过该设备并输出警告，不会让整个看板构建失败。
 
+> [!IMPORTANT]
+> **关于数据更新与部署**
+> 本项目默认采用 **静态站点生成 (SSG)** 模式。无论您是配置本地 JSON 文件还是远程 URL 地址，数据都是在**构建时 (Build Time)** 抓取并渲染进 HTML 的。
+> 因此，**当您的在线/本地 Token 数据更新后，网页需要重新编译部署才能展示最新数据**。
+> 
+> **自动化更新建议**：如果您将在线 JSON 托管在其他地方，可以在部署平台（如 Cloudflare Pages、Vercel 等）上配置 **Deploy Webhook**。然后在您的 Token 采集/上传脚本末尾添加一个 `curl -X POST <Webhook_URL>` 调用，即可实现数据更新后自动触发云端重新构建和部署，无需手动操作。
+
+
 ### 2. 环境变量配置 (`.env`)
 在 `themes/tboard` 项目根目录下创建 `.env` 文件，可动态声明要载入的设备及数据源地址：
 
