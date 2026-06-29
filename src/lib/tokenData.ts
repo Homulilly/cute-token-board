@@ -131,6 +131,11 @@ export type BoardViewData = {
   };
 };
 
+export type MonthlyViewData = Omit<BoardViewData, "topWeeks" | "topCostWeeks"> & {
+  topMonths: UsageWeek[];
+  topCostMonths: UsageWeek[];
+};
+
 export type TokenBoardData = {
   generatedAt: string;
   sourceMode: "local" | "remote" | "mixed";
@@ -144,7 +149,7 @@ export type TokenBoardData = {
   topModels: ModelSummary[];
   weekly: BoardViewData;
   daily: BoardViewData;
-  monthlyView: BoardViewData;
+  monthlyView: MonthlyViewData;
   records: {
     peakMonth: MonthlySummary;
     cacheShare: number;
@@ -1002,6 +1007,7 @@ function buildMonthlyDataset(
     const monthKey = week.monthKey;
     const currentMerged = mergedMap.get(monthKey) || {
       period: monthKey,
+      label: monthLabel(monthKey),
       monthKey,
       device: "merged",
       totalTokens: 0,
@@ -1046,6 +1052,7 @@ function buildMonthlyDataset(
       if (devWeek) {
         const currentDev = deviceMaps[key].get(monthKey) || {
           period: monthKey,
+          label: monthLabel(monthKey),
           monthKey,
           device: key,
           totalTokens: 0,
@@ -1226,8 +1233,8 @@ export async function buildTokenBoard(): Promise<TokenBoardData> {
     },
     monthlyView: {
       chartRanges: buildMonthlyChartRanges(mergedMonths, deviceMonths, devicesConfig),
-      topWeeks: topBy(activeMergedMonths, (m) => m.totalTokens, 8),
-      topCostWeeks: topBy(activeMergedMonths, (m) => m.totalCost, 6),
+      topMonths: topBy(activeMergedMonths, (m) => m.totalTokens, 8),
+      topCostMonths: topBy(activeMergedMonths, (m) => m.totalCost, 6),
       topAgents: buildAgents(activeMergedMonths),
       records: {
         peakWeek: peakMonthWeek,

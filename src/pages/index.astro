@@ -47,6 +47,7 @@ try {
 
 const latestDeltaWeekly = board.weekly.records.latestWeek.totalTokens - board.weekly.records.previousWeek.totalTokens;
 const latestDeltaDaily = board.daily.records.latestWeek.totalTokens - board.daily.records.previousWeek.totalTokens;
+const latestDeltaMonthly = board.monthlyView.records.latestWeek.totalTokens - board.monthlyView.records.previousWeek.totalTokens;
 const totalCacheTokens = board.totals.cacheReadTokens + board.totals.cacheCreationTokens;
 const ratio = (value: number, total = board.totals.totalTokens) => value / Math.max(total, 1);
 const widthPercent = (value: number, total = board.totals.totalTokens) =>
@@ -156,13 +157,16 @@ const getAgentIcon = (name: string): string => {
             <div>
               <span class="weekly-only">Active Weeks</span>
               <span class="daily-only">Active Days</span>
+              <span class="monthly-only">Active Months</span>
               <strong class="weekly-only">{board.weekly.records.longestStreak > 0 ? board.weekly.topWeeks.length : 0}</strong>
               <strong class="daily-only">{board.daily.records.averageActiveWeekTokens > 0 ? Math.round(board.totals.totalTokens / board.daily.records.averageActiveWeekTokens) : 0}</strong>
+              <strong class="monthly-only">{board.monthlyView.records.averageActiveWeekTokens > 0 ? Math.round(board.totals.totalTokens / board.monthlyView.records.averageActiveWeekTokens) : 0}</strong>
             </div>
             <div>
               <span>Current Streak</span>
               <strong class="weekly-only">{board.weekly.records.currentStreak} weeks</strong>
               <strong class="daily-only">{board.daily.records.currentStreak} days</strong>
+              <strong class="monthly-only">{board.monthlyView.records.currentStreak} months</strong>
             </div>
           </div>
         </section>
@@ -175,26 +179,35 @@ const getAgentIcon = (name: string): string => {
         <article class="kpi-card accent-green">
           <span class="weekly-only">Latest Week</span>
           <span class="daily-only">Latest Day</span>
+          <span class="monthly-only">Latest Month</span>
           <strong class="weekly-only">{formatCompact(board.weekly.records.latestWeek.totalTokens)}</strong>
           <strong class="daily-only">{formatCompact(board.daily.records.latestWeek.totalTokens)}</strong>
+          <strong class="monthly-only">{formatCompact(board.monthlyView.records.latestWeek.totalTokens)}</strong>
           <small class="weekly-only">{board.weekly.records.latestWeek.label}</small>
           <small class="daily-only">{board.daily.records.latestWeek.label}</small>
+          <small class="monthly-only">{board.monthlyView.records.latestWeek.label}</small>
         </article>
         <article class="kpi-card accent-yellow">
           <span class="weekly-only">Week Change</span>
           <span class="daily-only">Day Change</span>
+          <span class="monthly-only">Month Change</span>
           <strong class:list={["weekly-only", latestDeltaWeekly >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaWeekly)}</strong>
           <strong class:list={["daily-only", latestDeltaDaily >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaDaily)}</strong>
+          <strong class:list={["monthly-only", latestDeltaMonthly >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaMonthly)}</strong>
           <small class="weekly-only">vs {board.weekly.records.previousWeek.label} · {formatCompact(board.weekly.records.previousWeek.totalTokens)} token</small>
           <small class="daily-only">vs {board.daily.records.previousWeek.label} · {formatCompact(board.daily.records.previousWeek.totalTokens)} token</small>
+          <small class="monthly-only">vs {board.monthlyView.records.previousWeek.label} · {formatCompact(board.monthlyView.records.previousWeek.totalTokens)} token</small>
         </article>
         <article class="kpi-card accent-blue">
           <span class="weekly-only">Peak Week</span>
           <span class="daily-only">Peak Day</span>
+          <span class="monthly-only">Peak Month</span>
           <strong class="weekly-only">{board.weekly.records.peakWeek.label}</strong>
           <strong class="daily-only">{board.daily.records.peakWeek.label}</strong>
+          <strong class="monthly-only">{board.monthlyView.records.peakWeek.label}</strong>
           <small class="weekly-only">{formatCompact(board.weekly.records.peakWeek.totalTokens)} token</small>
           <small class="daily-only">{formatCompact(board.daily.records.peakWeek.totalTokens)} token</small>
+          <small class="monthly-only">{formatCompact(board.monthlyView.records.peakWeek.totalTokens)} token</small>
         </article>
         <article class="kpi-card accent-pink">
           <span>Cache Share</span>
@@ -493,8 +506,10 @@ const getAgentIcon = (name: string): string => {
             <div>
               <p class="eyebrow weekly-only">Weekly rank</p>
               <p class="eyebrow daily-only">Daily rank</p>
+              <p class="eyebrow monthly-only">Weekly rank</p>
               <h2 class="weekly-only">Weekly Rank</h2>
               <h2 class="daily-only">Daily Rank</h2>
+              <h2 class="monthly-only">Weekly Rank</h2>
             </div>
           </div>
           <ol class="rank-list weekly-only">
@@ -512,6 +527,15 @@ const getAgentIcon = (name: string): string => {
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <strong>{day.label}</strong>
                 <em>{formatCompact(day.totalTokens)}</em>
+              </li>
+            ))}
+          </ol>
+          <ol class="rank-list monthly-only">
+            {board.weekly.topWeeks.slice(0, 5).map((week, index) => (
+              <li>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{week.label}</strong>
+                <em>{formatCompact(week.totalTokens)}</em>
               </li>
             ))}
           </ol>
@@ -538,8 +562,10 @@ const getAgentIcon = (name: string): string => {
             <div>
               <p class="eyebrow weekly-only">Cost rank</p>
               <p class="eyebrow daily-only">Cost rank (Day)</p>
+              <p class="eyebrow monthly-only">Cost rank (Month)</p>
               <h2 class="weekly-only">Cost Rank</h2>
               <h2 class="daily-only">Cost Rank</h2>
+              <h2 class="monthly-only">Cost Rank</h2>
             </div>
           </div>
           <ol class="rank-list weekly-only">
@@ -557,6 +583,15 @@ const getAgentIcon = (name: string): string => {
                 <span>{String(index + 1).padStart(2, "0")}</span>
                 <strong>{day.label}</strong>
                 <em>{formatCurrency(day.totalCost)}</em>
+              </li>
+            ))}
+          </ol>
+          <ol class="rank-list monthly-only">
+            {board.monthlyView.topCostMonths.slice(0, 5).map((month, index) => (
+              <li>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{month.label}</strong>
+                <em>{formatCurrency(month.totalCost)}</em>
               </li>
             ))}
           </ol>
@@ -609,6 +644,28 @@ const getAgentIcon = (name: string): string => {
             <div>
               <dt>Active Day Avg</dt>
               <dd>{formatCompact(board.daily.records.averageActiveWeekTokens)}</dd>
+            </div>
+          </dl>
+          <dl class="record-list monthly-only">
+            <div>
+              <dt>Peak Month</dt>
+              <dd>{board.monthlyView.records.peakWeek.label}</dd>
+            </div>
+            <div>
+              <dt>Latest Month</dt>
+              <dd>{board.monthlyView.records.latestWeek.label}</dd>
+            </div>
+            <div>
+              <dt>Longest Streak</dt>
+              <dd>{board.monthlyView.records.longestStreak} months</dd>
+            </div>
+            <div>
+              <dt>Biggest Jump</dt>
+              <dd>{board.monthlyView.records.biggestJump.label} · {formatSignedCompact(board.monthlyView.records.biggestJump.deltaTokens)}</dd>
+            </div>
+            <div>
+              <dt>Active Month Avg</dt>
+              <dd>{formatCompact(board.monthlyView.records.averageActiveWeekTokens)}</dd>
             </div>
           </dl>
         </article>
@@ -814,6 +871,7 @@ const getAgentIcon = (name: string): string => {
           // Toggle layout view class
           if (mainBoard) {
             mainBoard.classList.toggle("view-daily", unit === "daily");
+            mainBoard.classList.toggle("view-monthly", unit === "monthly");
           }
 
           // 1. Update Title text

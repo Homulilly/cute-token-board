@@ -1817,11 +1817,15 @@ td:not(:first-child) {
 }
 
 /* View-mode display utilities */
-.daily-only {
+.daily-only,
+.monthly-only {
   display: none !important;
 }
 
-main.board.view-daily .weekly-only {
+main.board.view-daily .weekly-only,
+main.board.view-daily .monthly-only,
+main.board.view-monthly .weekly-only,
+main.board.view-monthly .daily-only {
   display: none !important;
 }
 
@@ -1829,8 +1833,14 @@ main.board.view-daily .daily-only {
   display: block !important;
 }
 
+main.board.view-monthly .monthly-only {
+  display: block !important;
+}
+
 main.board.view-daily ol.daily-only,
-main.board.view-daily ul.daily-only {
+main.board.view-daily ul.daily-only,
+main.board.view-monthly ol.monthly-only,
+main.board.view-monthly ul.monthly-only {
   display: grid !important;
 }
 
@@ -1838,21 +1848,31 @@ main.board.view-daily span.daily-only,
 main.board.view-daily strong.daily-only,
 main.board.view-daily small.daily-only,
 main.board.view-daily dd.daily-only,
-main.board.view-daily dt.daily-only {
+main.board.view-daily dt.daily-only,
+main.board.view-monthly span.monthly-only,
+main.board.view-monthly strong.monthly-only,
+main.board.view-monthly small.monthly-only,
+main.board.view-monthly dd.monthly-only,
+main.board.view-monthly dt.monthly-only {
   display: inline !important;
 }
 
-main.board.view-daily dl.daily-only {
-  display: grid !important;
-}
-
-/* Fix block layout for KPI cards and Hero metrics in daily mode */
 main.board.view-daily .kpi-card span.daily-only,
 main.board.view-daily .kpi-card strong.daily-only,
 main.board.view-daily .kpi-card small.daily-only,
 main.board.view-daily .hero-metrics span.daily-only,
-main.board.view-daily .hero-metrics strong.daily-only {
+main.board.view-daily .hero-metrics strong.daily-only,
+main.board.view-monthly .kpi-card span.monthly-only,
+main.board.view-monthly .kpi-card strong.monthly-only,
+main.board.view-monthly .kpi-card small.monthly-only,
+main.board.view-monthly .hero-metrics span.monthly-only,
+main.board.view-monthly .hero-metrics strong.monthly-only {
   display: block !important;
+}
+
+main.board.view-daily dl.daily-only,
+main.board.view-monthly dl.monthly-only {
+  display: grid !important;
 }
 
 /* Scroll Reveal & Random Tilt for panels below daily dots */
