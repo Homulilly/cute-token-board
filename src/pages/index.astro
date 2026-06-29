@@ -964,6 +964,7 @@ const getAgentIcon = (name: string): string => {
 
           const hideTooltip = () => {
             tooltip.classList.remove("is-visible");
+            tooltip.hidden = true;
           };
 
           heatmap.addEventListener("pointerover", (event) => {
@@ -972,7 +973,7 @@ const getAgentIcon = (name: string): string => {
           });
           heatmap.addEventListener("pointerout", (event) => {
             const dot = event.target.closest(".heat-dot");
-            if (dot && !heatmap.contains(event.relatedTarget)) hideTooltip();
+            if (dot) hideTooltip();
           });
           heatmap.addEventListener("focusin", (event) => {
             const dot = event.target.closest(".heat-dot");
