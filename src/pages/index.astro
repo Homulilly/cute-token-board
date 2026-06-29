@@ -1,0 +1,965 @@
+---
+import "../styles/global.css";
+import {
+  buildTokenBoard,
+  formatCompact,
+  formatCurrency,
+  formatPercent,
+  formatSignedCompact
+} from "../lib/tokenData";
+
+const board = await buildTokenBoard();
+const siteName = import.meta.env.SITE_NAME || "Token Board";
+
+// Forced "Thinking" loading screen. Default 2000ms.
+// THINKING_DELAY: unset -> 2000; "off"/"false"/"no"/"0" -> disabled; any positive number -> that many ms.
+const thinkingDelayRaw = import.meta.env.THINKING_DELAY;
+let thinkingDelay = 2000;
+if (thinkingDelayRaw !== undefined && thinkingDelayRaw !== "") {
+  const normalized = String(thinkingDelayRaw).trim().toLowerCase();
+  if (["off", "false", "no", "disabled"].includes(normalized)) {
+    thinkingDelay = 0;
+  } else {
+    const parsed = Number(normalized);
+    thinkingDelay = Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+  }
+}
+const fontCdnUrl = import.meta.env.FONT_CDN_URL || "https://fonts.loli.net/css2?family=Sniglet:wght@400;800&display=swap";
+const chartSeriesLabel = ["total", ...board.devices.map((device) => device.label)].join(", ");
+
+let fontName = import.meta.env.FONT_NAME || "";
+if (!fontName && fontCdnUrl) {
+  const match = fontCdnUrl.match(/[?&]family=([^:&?#]+)/);
+  if (match && match[1]) {
+    fontName = decodeURIComponent(match[1].replace(/\+/g, " "));
+  }
+}
+if (!fontName) {
+  fontName = "Sniglet";
+}
+
+let preconnectUrl = "";
+try {
+  if (fontCdnUrl.startsWith("http://") || fontCdnUrl.startsWith("https://")) {
+    preconnectUrl = new URL(fontCdnUrl).origin;
+  }
+} catch (e) {}
+
+const latestDeltaWeekly = board.weekly.records.latestWeek.totalTokens - board.weekly.records.previousWeek.totalTokens;
+const latestDeltaDaily = board.daily.records.latestWeek.totalTokens - board.daily.records.previousWeek.totalTokens;
+const totalCacheTokens = board.totals.cacheReadTokens + board.totals.cacheCreationTokens;
+const ratio = (value: number, total = board.totals.totalTokens) => value / Math.max(total, 1);
+const widthPercent = (value: number, total = board.totals.totalTokens) =>
+  `${Math.min(Math.max(ratio(value, total), 0), 1) * 100}%`;
+const defaultChartRange = "1m";
+const defaultChart = board.daily.chartRanges.find((range) => range.key === defaultChartRange) || board.daily.chartRanges[0];
+const sourceLabel =
+  board.sourceMode === "remote" ? "Remote Data" : board.sourceMode === "mixed" ? "Mixed Data" : "Local Data";
+const displayModelName = (name: string) =>
+  name
+    .replace(/[-_.]?(?:20\d{6}|20\d{2}[-_.]\d{2}[-_.]\d{2})$/u, "")
+    .replace(/[-_.]+$/u, "") || name;
+
+// Rendered via `Fragment set:html` below. Every branch MUST return a static
+// HTML constant — never interpolate `name` (or any external data) into the
+// returned markup, or this becomes an XSS sink for untrusted JSON sources.
+const getModelIcon = (name: string): string => {
+  const lower = name.toLowerCase();
+  if (lower.includes("gemini")) {
+    return `<img class="icon-model" src="/model/gemini.svg" alt="Gemini" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  if (lower.includes("claude")) {
+    return `<img class="icon-model" src="/model/claude.svg" alt="Claude" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  if (lower.includes("gpt") || lower.includes("chatgpt") || lower.includes("openai")) {
+    return `<img class="icon-model" src="/model/openai-chatgpt.svg" alt="OpenAI" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  if (lower.includes("google")) {
+    return `<img class="icon-model" src="/model/google.svg" alt="Google" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  return `<svg class="icon-model" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; margin-right: 6px; color: var(--ink-soft);"><rect x="4" y="4" width="16" height="16" rx="2" /><path d="M9 9h6v6H9z" /><path d="M9 1v3M15 1v3" /></svg>`;
+};
+
+// Rendered via `Fragment set:html` below. Every branch MUST return a static
+// HTML constant — never interpolate `name` (or any external data) into the
+// returned markup, or this becomes an XSS sink for untrusted JSON sources.
+const getAgentIcon = (name: string): string => {
+  const lower = name.toLowerCase();
+  if (lower.includes("opencode")) {
+    return `<img class="icon-agent" src="/model/opencode.svg" alt="OpenCode" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  if (lower.includes("claude-code") || lower.includes("claude")) {
+    return `<img class="icon-agent" src="/model/claude-code.svg" alt="Claude Code" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  if (lower.includes("codex")) {
+    return `<img class="icon-agent" src="/model/codex.svg" alt="Codex" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  if (lower.includes("gemini")) {
+    return `<img class="icon-agent" src="/model/gemini.svg" alt="Gemini" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px;" />`;
+  }
+  if (lower.includes("research")) {
+    return `<svg class="icon-agent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px; color: #2563eb;"><circle cx="11" cy="11" r="8" /><path d="M21 21l-4.3-4.3" /></svg>`;
+  }
+  if (lower.includes("self") || lower.includes("antigravity")) {
+    return `<svg class="icon-agent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px; color: var(--green-strong);"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" /><path d="M12 6v12M8 10h8" /></svg>`;
+  }
+  if (lower.includes("code") || lower.includes("write") || lower.includes("program")) {
+    return `<svg class="icon-agent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px; color: #b45309;"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6" /></svg>`;
+  }
+  return `<svg class="icon-agent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 15px; height: 15px; display: inline-block; vertical-align: middle; margin-right: 6px; color: #475569;"><rect x="3" y="11" width="18" height="10" rx="2" /><circle cx="12" cy="5" r="2" /><path d="M12 7v4M8 15h.01M16 15h.01" /></svg>`;
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Personal token board generated from ccusage daily JSON." />
+    <link rel="icon" type="image/webp" href="/images/favicon.webp" />
+    {preconnectUrl && <link rel="preconnect" href={preconnectUrl} crossorigin />}
+    <link href={fontCdnUrl} rel="stylesheet" />
+    <style is:global define:vars={{ fontSans: `"${fontName}", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif` }}>
+      :root {
+        --font-sans: var(--fontSans) !important;
+      }
+    </style>
+    <title>{siteName}</title>
+  </head>
+  <body class={thinkingDelay > 0 ? "is-loading" : undefined}>
+    {thinkingDelay > 0 && (
+      <div class="loading-screen" role="status" aria-live="polite">
+        <span>Thinking<i aria-hidden="true"><b></b><b></b><b></b><b></b></i></span>
+      </div>
+    )}
+    <div class="paper-grain" aria-hidden="true"></div>
+    <main class="board view-daily">
+      <header class="hero-paper">
+        <span class="tape tape-left" aria-hidden="true"></span>
+        <span class="tape tape-right" aria-hidden="true"></span>
+        <section class="hero-copy" aria-labelledby="page-title">
+          <p class="eyebrow">Weekly token journal</p>
+          <h1 id="page-title">{siteName}</h1>
+          <div class="hero-metrics" aria-label="Overview">
+            <div>
+              <span>Total Tokens</span>
+              <strong>{formatCompact(board.totals.totalTokens)}</strong>
+            </div>
+            <div>
+              <span>Total Cost</span>
+              <strong>{formatCurrency(board.totals.totalCost)}</strong>
+            </div>
+            <div>
+              <span class="weekly-only">Active Weeks</span>
+              <span class="daily-only">Active Days</span>
+              <strong class="weekly-only">{board.weekly.records.longestStreak > 0 ? board.weekly.topWeeks.length : 0}</strong>
+              <strong class="daily-only">{board.daily.records.averageActiveWeekTokens > 0 ? Math.round(board.totals.totalTokens / board.daily.records.averageActiveWeekTokens) : 0}</strong>
+            </div>
+            <div>
+              <span>Current Streak</span>
+              <strong class="weekly-only">{board.weekly.records.currentStreak} weeks</strong>
+              <strong class="daily-only">{board.daily.records.currentStreak} days</strong>
+            </div>
+          </div>
+        </section>
+        <aside class="hero-sticker" aria-label="Data source">
+          <img src="/images/token-sticker.webp" alt="Hand-drawn token board sticker" />
+        </aside>
+      </header>
+
+      <section class="kpi-grid" aria-label="Key metrics">
+        <article class="kpi-card accent-green">
+          <span class="weekly-only">Latest Week</span>
+          <span class="daily-only">Latest Day</span>
+          <strong class="weekly-only">{formatCompact(board.weekly.records.latestWeek.totalTokens)}</strong>
+          <strong class="daily-only">{formatCompact(board.daily.records.latestWeek.totalTokens)}</strong>
+          <small class="weekly-only">{board.weekly.records.latestWeek.label}</small>
+          <small class="daily-only">{board.daily.records.latestWeek.label}</small>
+        </article>
+        <article class="kpi-card accent-yellow">
+          <span class="weekly-only">Week Change</span>
+          <span class="daily-only">Day Change</span>
+          <strong class:list={["weekly-only", latestDeltaWeekly >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaWeekly)}</strong>
+          <strong class:list={["daily-only", latestDeltaDaily >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaDaily)}</strong>
+          <small class="weekly-only">vs {board.weekly.records.previousWeek.label}</small>
+          <small class="daily-only">vs {board.daily.records.previousWeek.label}</small>
+        </article>
+        <article class="kpi-card accent-blue">
+          <span class="weekly-only">Peak Week</span>
+          <span class="daily-only">Peak Day</span>
+          <strong class="weekly-only">{board.weekly.records.peakWeek.label}</strong>
+          <strong class="daily-only">{board.daily.records.peakWeek.label}</strong>
+          <small class="weekly-only">{formatCompact(board.weekly.records.peakWeek.totalTokens)} token</small>
+          <small class="daily-only">{formatCompact(board.daily.records.peakWeek.totalTokens)} token</small>
+        </article>
+        <article class="kpi-card accent-pink">
+          <span>Cache Share</span>
+          <strong>{formatPercent(board.records.cacheShare)}</strong>
+          <small>Cache read plus creation</small>
+        </article>
+      </section>
+
+      <section class="chart-panel paper-panel" aria-labelledby="curve-title">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Token curve</p>
+            <h2 id="curve-title">Weekly Usage Curve</h2>
+          </div>
+          <div class="chart-tools">
+            <div class="switches-row">
+              <div class="range-switch weekly-ranges" style="display: none;" role="group" aria-label="Curve range">
+                {board.weekly.chartRanges.map((range) => (
+                  <button
+                    type="button"
+                    class:list={["range-button", range.key === defaultChartRange && "is-active"]}
+                    data-chart-trigger={range.key}
+                    data-chart-unit="weekly"
+                    data-range-caption={range.caption}
+                    aria-pressed={range.key === defaultChartRange ? "true" : "false"}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+              <div class="range-switch daily-ranges" role="group" aria-label="Curve range">
+                {board.daily.chartRanges.filter((r) => r.key === "1m").map((range) => (
+                  <button
+                    type="button"
+                    class="range-button is-active"
+                    data-chart-trigger={range.key}
+                    data-chart-unit="daily"
+                    data-range-caption={range.caption}
+                    aria-pressed="true"
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+              <div class="range-switch monthly-ranges" style="display: none;" role="group" aria-label="Curve range">
+                {board.monthlyView.chartRanges.map((range) => (
+                  <button
+                    type="button"
+                    class:list={["range-button", range.key === "all" && "is-active"]}
+                    data-chart-trigger={range.key}
+                    data-chart-unit="monthly"
+                    data-range-caption={range.caption}
+                    aria-pressed={range.key === "all" ? "true" : "false"}
+                  >
+                    {range.label}
+                  </button>
+                ))}
+              </div>
+              <div class="unit-switch" role="group" aria-label="Curve unit">
+                <button
+                  type="button"
+                  class="unit-button is-active"
+                  data-unit-trigger="daily"
+                  aria-pressed="true"
+                >
+                  Daily
+                </button>
+                <button
+                  type="button"
+                  class="unit-button"
+                  data-unit-trigger="weekly"
+                  aria-pressed="false"
+                >
+                  Weekly
+                </button>
+                <button
+                  type="button"
+                  class="unit-button"
+                  data-unit-trigger="monthly"
+                  aria-pressed="false"
+                >
+                  Monthly
+                </button>
+              </div>
+            </div>
+            <div class="legend" aria-label="Legend">
+              <button type="button" class="legend-item" data-series="total" aria-pressed="true">
+                <i class="legend-dot total"></i>Total
+              </button>
+              {board.devices.map((device) => (
+                <button type="button" class="legend-item" data-series={device.key} aria-pressed="true">
+                  <i class="legend-dot device-dot" style={`--series-color:${device.color}`}></i>{device.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+        <p class="chart-caption" data-chart-caption>{defaultChart.caption}</p>
+        <div class="chart-stack">
+          {board.weekly.chartRanges.map((range) => (
+            <svg
+              class:list={["line-chart", "weekly-chart"]}
+              style="display: none;"
+              viewBox={`0 0 ${range.width} ${range.height}`}
+              role="img"
+              aria-label={`Weekly token usage curve for the last ${range.label}, with ${chartSeriesLabel} lines`}
+              data-chart-range={range.key}
+              data-chart-unit="weekly"
+              data-active="false"
+            >
+              <defs>
+                <pattern id={`sketch-hatch-${range.key}`} width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="0" x2="0" y2="10" stroke="var(--green)" stroke-width="1.2" stroke-opacity="0.55"></line>
+                </pattern>
+                <linearGradient id={`maskGradient-${range.key}`} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="white" stop-opacity="0.8"></stop>
+                  <stop offset="100%" stop-color="white" stop-opacity="0"></stop>
+                </linearGradient>
+                <mask id={`areaMask-${range.key}`}>
+                  <rect x="0" y="0" width={range.width} height={range.height} fill={`url(#maskGradient-${range.key})`} />
+                </mask>
+              </defs>
+              {range.yTicks.map((tick) => (
+                <g class="axis-tick">
+                  <line x1="44" x2="876" y1={tick.y} y2={tick.y}></line>
+                  <text x="18" y={tick.y + 4}>{tick.label}</text>
+                </g>
+              ))}
+              <path class="chart-area" d={range.mergedArea} fill={`url(#sketch-hatch-${range.key})`} mask={`url(#areaMask-${range.key})`}></path>
+              <path class="chart-line total" data-series="total" d={range.mergedPath}></path>
+              {range.devicePaths.map((dp) => (
+                <path class="chart-line device-line" data-series={dp.deviceKey} style={`--series-color:${dp.color}`} d={dp.path}></path>
+              ))}
+              {range.xTicks.map((tick) => (
+                <text class="x-tick" x={tick.x} y="286">{tick.label}</text>
+              ))}
+            </svg>
+          ))}
+          {board.daily.chartRanges.filter((r) => r.key === "1m").map((range) => (
+            <svg
+              class:list={["line-chart", "daily-chart", "is-active"]}
+              viewBox={`0 0 ${range.width} ${range.height}`}
+              role="img"
+              aria-label={`Daily token usage curve for the last ${range.label}, with ${chartSeriesLabel} lines`}
+              data-chart-range={range.key}
+              data-chart-unit="daily"
+              data-active="true"
+            >
+              <defs>
+                <pattern id={`daily-sketch-hatch-${range.key}`} width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="0" x2="0" y2="10" stroke="var(--green)" stroke-width="1.2" stroke-opacity="0.55"></line>
+                </pattern>
+                <linearGradient id={`daily-maskGradient-${range.key}`} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="white" stop-opacity="0.8"></stop>
+                  <stop offset="100%" stop-color="white" stop-opacity="0"></stop>
+                </linearGradient>
+                <mask id={`daily-areaMask-${range.key}`}>
+                  <rect x="0" y="0" width={range.width} height={range.height} fill={`url(#daily-maskGradient-${range.key})`} />
+                </mask>
+              </defs>
+              {range.yTicks.map((tick) => (
+                <g class="axis-tick">
+                  <line x1="44" x2="876" y1={tick.y} y2={tick.y}></line>
+                  <text x="18" y={tick.y + 4}>{tick.label}</text>
+                </g>
+              ))}
+              <path class="chart-area" d={range.mergedArea} fill={`url(#daily-sketch-hatch-${range.key})`} mask={`url(#daily-areaMask-${range.key})`}></path>
+              <path class="chart-line total" data-series="total" d={range.mergedPath}></path>
+              {range.devicePaths.map((dp) => (
+                <path class="chart-line device-line" data-series={dp.deviceKey} style={`--series-color:${dp.color}`} d={dp.path}></path>
+              ))}
+              {range.xTicks.map((tick) => (
+                <text class="x-tick" x={tick.x} y="286">{tick.label}</text>
+              ))}
+            </svg>
+          ))}
+          {board.monthlyView.chartRanges.map((range) => (
+            <svg
+              class:list={["line-chart", "monthly-chart"]}
+              style="display: none;"
+              viewBox={`0 0 ${range.width} ${range.height}`}
+              role="img"
+              aria-label={`Monthly token usage curve for the last ${range.label}, with ${chartSeriesLabel} lines`}
+              data-chart-range={range.key}
+              data-chart-unit="monthly"
+              data-active="false"
+            >
+              <defs>
+                <pattern id={`monthly-sketch-hatch-${range.key}`} width="10" height="10" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
+                  <line x1="0" y1="0" x2="0" y2="10" stroke="var(--green)" stroke-width="1.2" stroke-opacity="0.55"></line>
+                </pattern>
+                <linearGradient id={`monthly-maskGradient-${range.key}`} x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0%" stop-color="white" stop-opacity="0.8"></stop>
+                  <stop offset="100%" stop-color="white" stop-opacity="0"></stop>
+                </linearGradient>
+                <mask id={`monthly-areaMask-${range.key}`}>
+                  <rect x="0" y="0" width={range.width} height={range.height} fill={`url(#monthly-maskGradient-${range.key})`} />
+                </mask>
+              </defs>
+              {range.yTicks.map((tick) => (
+                <g class="axis-tick">
+                  <line x1="44" x2="876" y1={tick.y} y2={tick.y}></line>
+                  <text x="18" y={tick.y + 4}>{tick.label}</text>
+                </g>
+              ))}
+              <path class="chart-area" d={range.mergedArea} fill={`url(#monthly-sketch-hatch-${range.key})`} mask={`url(#monthly-areaMask-${range.key})`}></path>
+              <path class="chart-line total" data-series="total" d={range.mergedPath}></path>
+              {range.devicePaths.map((dp) => (
+                <path class="chart-line device-line" data-series={dp.deviceKey} style={`--series-color:${dp.color}`} d={dp.path}></path>
+              ))}
+              {range.xTicks.map((tick) => (
+                <text class="x-tick" x={tick.x} y="286">{tick.label}</text>
+              ))}
+            </svg>
+          ))}
+        </div>
+      </section>
+
+      <section class="heat-panel paper-panel" aria-labelledby="heat-title">
+        <div class="section-head">
+          <div>
+            <h2 id="heat-title">Daily dots</h2>
+          </div>
+
+        </div>
+        <div class="heatmap daily-heatmap" aria-label="Each dot represents one day">
+          {board.dailyHeatmap.map((day) => (
+            <span
+              class="heat-dot"
+              style={`--heat-color:${day.color};--heat:${day.intensity.toFixed(4)}`}
+              data-date={day.label}
+              data-tokens={`${formatCompact(day.totalTokens)} token`}
+              data-cost={formatCurrency(day.totalCost)}
+              aria-label={`${day.label} ${formatCompact(day.totalTokens)} token ${formatCurrency(day.totalCost)}`}
+            ></span>
+          ))}
+        </div>
+        <div class="month-strip" aria-hidden="true">
+          {[...new Set(board.dailyHeatmap.map((day) => day.monthKey))].map((month) => <span>{month}</span>)}
+        </div>
+      </section>
+
+      <section class="device-grid" aria-label="Device data">
+        {board.devices.map((device) => (
+          <article class:list={["device-card paper-panel", `device-${device.key}`]}>
+            <span class="tape tape-mini" aria-hidden="true"></span>
+            <div class="device-head">
+              <div>
+                <p class="eyebrow">Device</p>
+                <h2>{device.label}</h2>
+              </div>
+              <strong>{formatPercent(device.share)}</strong>
+            </div>
+            <dl class="device-stats">
+              <div>
+                <dt>Token</dt>
+                <dd>{formatCompact(device.totals.totalTokens)}</dd>
+              </div>
+              <div>
+                <dt>Cost</dt>
+                <dd>{formatCurrency(device.totals.totalCost)}</dd>
+              </div>
+              <div>
+                <dt>Active Weeks</dt>
+                <dd>{device.activeWeeks}</dd>
+              </div>
+              <div>
+                <dt>Peak Week</dt>
+                <dd>{device.peakWeek.label}</dd>
+              </div>
+            </dl>
+            <div class="bar-row">
+              <span>Input</span>
+              <i style={`--w:${widthPercent(device.totals.inputTokens, device.totals.totalTokens)}`}></i>
+              <em>{formatPercent(ratio(device.totals.inputTokens, device.totals.totalTokens))}</em>
+            </div>
+            <div class="bar-row">
+              <span>Output</span>
+              <i style={`--w:${widthPercent(device.totals.outputTokens, device.totals.totalTokens)}`}></i>
+              <em>{formatPercent(ratio(device.totals.outputTokens, device.totals.totalTokens))}</em>
+            </div>
+            <div class="bar-row">
+              <span>Cache</span>
+              <i style={`--w:${widthPercent(device.totals.cacheReadTokens + device.totals.cacheCreationTokens, device.totals.totalTokens)}`}></i>
+              <em>{formatPercent(ratio(device.totals.cacheReadTokens + device.totals.cacheCreationTokens, device.totals.totalTokens))}</em>
+            </div>
+          </article>
+        ))}
+      </section>
+
+      <section class="rank-grid" aria-label="Rankings">
+        <article class="rank-panel paper-panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow weekly-only">Weekly rank</p>
+              <p class="eyebrow daily-only">Daily rank</p>
+              <h2 class="weekly-only">Weekly Rank</h2>
+              <h2 class="daily-only">Daily Rank</h2>
+            </div>
+          </div>
+          <ol class="rank-list weekly-only">
+            {board.weekly.topWeeks.slice(0, 5).map((week, index) => (
+              <li>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{week.label}</strong>
+                <em>{formatCompact(week.totalTokens)}</em>
+              </li>
+            ))}
+          </ol>
+          <ol class="rank-list daily-only">
+            {board.daily.topWeeks.slice(0, 5).map((day, index) => (
+              <li>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{day.label}</strong>
+                <em>{formatCompact(day.totalTokens)}</em>
+              </li>
+            ))}
+          </ol>
+        </article>
+        <article class="rank-panel paper-panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Monthly rank</p>
+              <h2>Monthly Rank</h2>
+            </div>
+          </div>
+          <ol class="rank-list">
+            {board.topMonths.slice(0, 5).map((month, index) => (
+              <li>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{month.label}</strong>
+                <em>{formatCompact(month.totalTokens)}</em>
+              </li>
+            ))}
+          </ol>
+        </article>
+        <article class="rank-panel paper-panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow weekly-only">Cost rank</p>
+              <p class="eyebrow daily-only">Cost rank (Day)</p>
+              <h2 class="weekly-only">Cost Rank</h2>
+              <h2 class="daily-only">Cost Rank</h2>
+            </div>
+          </div>
+          <ol class="rank-list weekly-only">
+            {board.weekly.topCostWeeks.slice(0, 5).map((week, index) => (
+              <li>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{week.label}</strong>
+                <em>{formatCurrency(week.totalCost)}</em>
+              </li>
+            ))}
+          </ol>
+          <ol class="rank-list daily-only">
+            {board.daily.topCostWeeks.slice(0, 5).map((day, index) => (
+              <li>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <strong>{day.label}</strong>
+                <em>{formatCurrency(day.totalCost)}</em>
+              </li>
+            ))}
+          </ol>
+        </article>
+      </section>
+
+      <section class="insight-grid" aria-label="Usage insights">
+        <article class="paper-panel insight-card">
+          <p class="eyebrow">Records</p>
+          <h2>Records</h2>
+          <dl class="record-list weekly-only">
+            <div>
+              <dt>Peak Week</dt>
+              <dd>{board.weekly.records.peakWeek.label}</dd>
+            </div>
+            <div>
+              <dt>Peak Month</dt>
+              <dd>{board.records.peakMonth.label}</dd>
+            </div>
+            <div>
+              <dt>Longest Streak</dt>
+              <dd>{board.weekly.records.longestStreak} weeks</dd>
+            </div>
+            <div>
+              <dt>Biggest Jump</dt>
+              <dd>{board.weekly.records.biggestJump.label} · {formatSignedCompact(board.weekly.records.biggestJump.deltaTokens)}</dd>
+            </div>
+            <div>
+              <dt>Active Week Avg</dt>
+              <dd>{formatCompact(board.weekly.records.averageActiveWeekTokens)}</dd>
+            </div>
+          </dl>
+          <dl class="record-list daily-only">
+            <div>
+              <dt>Peak Day</dt>
+              <dd>{board.daily.records.peakWeek.label}</dd>
+            </div>
+            <div>
+              <dt>Peak Month</dt>
+              <dd>{board.records.peakMonth.label}</dd>
+            </div>
+            <div>
+              <dt>Longest Streak</dt>
+              <dd>{board.daily.records.longestStreak} days</dd>
+            </div>
+            <div>
+              <dt>Biggest Jump</dt>
+              <dd>{board.daily.records.biggestJump.label} · {formatSignedCompact(board.daily.records.biggestJump.deltaTokens)}</dd>
+            </div>
+            <div>
+              <dt>Active Day Avg</dt>
+              <dd>{formatCompact(board.daily.records.averageActiveWeekTokens)}</dd>
+            </div>
+          </dl>
+        </article>
+        <article class="paper-panel mix-card">
+          <span class="tape tape-mini" aria-hidden="true"></span>
+          <p class="eyebrow">Token mix</p>
+          <h2>Token Mix</h2>
+          <div class="mix-bars" aria-label="Token type share">
+            <div class="mix-line mix-cache">
+              <span>Cache</span>
+              <i><b style={`--w:${widthPercent(totalCacheTokens)}`}></b></i>
+              <em>{formatPercent(board.records.cacheShare)}</em>
+            </div>
+            <div class="mix-line mix-input">
+              <span>Input</span>
+              <i><b style={`--w:${widthPercent(board.totals.inputTokens)}`}></b></i>
+              <em>{formatPercent(ratio(board.totals.inputTokens))}</em>
+            </div>
+            <div class="mix-line mix-output">
+              <span>Output</span>
+              <i><b style={`--w:${widthPercent(board.totals.outputTokens)}`}></b></i>
+              <em>{formatPercent(board.records.outputShare)}</em>
+            </div>
+          </div>
+          <dl class="token-breakdown">
+            <div>
+              <dt>Cache Read</dt>
+              <dd>{formatCompact(board.totals.cacheReadTokens)}</dd>
+            </div>
+            <div>
+              <dt>Cache Create</dt>
+              <dd>{formatCompact(board.totals.cacheCreationTokens)}</dd>
+            </div>
+            <div>
+              <dt>Input</dt>
+              <dd>{formatCompact(board.totals.inputTokens)}</dd>
+            </div>
+            <div>
+              <dt>Output</dt>
+              <dd>{formatCompact(board.totals.outputTokens)}</dd>
+            </div>
+          </dl>
+        </article>
+      </section>
+
+      <section class="table-grid" aria-label="Models and agents">
+        <article class="paper-panel table-panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Models</p>
+              <h2>Model Usage Rank</h2>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Model</th>
+                  <th>Token</th>
+                  <th>Cost</th>
+                  <th>Output</th>
+                </tr>
+              </thead>
+               <tbody>
+                {board.topModels.map((model) => (
+                  <tr>
+                    <td style="display: flex; align-items: center;">
+                      <Fragment set:html={getModelIcon(model.modelName)} />
+                      <span>{displayModelName(model.modelName)}</span>
+                    </td>
+                    <td>{formatCompact(model.totalTokens)}</td>
+                    <td>{formatCurrency(model.totalCost)}</td>
+                    <td>{formatCompact(model.outputTokens)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </article>
+        <article class="paper-panel table-panel">
+          <div class="section-head compact">
+            <div>
+              <p class="eyebrow">Agents</p>
+              <h2 class="weekly-only">Agent Active Weeks</h2>
+              <h2 class="daily-only">Agent Active Days</h2>
+            </div>
+          </div>
+          <ol class="agent-list weekly-only">
+            {board.weekly.topAgents.map((agent) => (
+              <li>
+                <strong style="display: flex; align-items: center;">
+                  <Fragment set:html={getAgentIcon(agent.name)} />
+                  <span>{agent.name}</span>
+                </strong>
+                <span>{agent.activeWeeks} weeks</span>
+                <em>Touched {formatCompact(agent.tokenTouch)}</em>
+              </li>
+            ))}
+          </ol>
+          <ol class="agent-list daily-only">
+            {board.daily.topAgents.map((agent) => (
+              <li>
+                <strong style="display: flex; align-items: center;">
+                  <Fragment set:html={getAgentIcon(agent.name)} />
+                  <span>{agent.name}</span>
+                </strong>
+                <span>{agent.activeWeeks} days</span>
+                <em>Touched {formatCompact(agent.tokenTouch)}</em>
+              </li>
+            ))}
+          </ol>
+        </article>
+      </section>
+
+      <div class="footer-command">
+        <code>pnpx ccusage daily -j token-name.json</code>
+      </div>
+
+      <footer class="footer-note">
+        <span>Static Astro export</span>
+        <span>ccusage daily data grouped by date</span>
+        <span class="footer-links">
+          <a href="https://github.com/Homulilly/cute-token-board" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://github.com/Homulilly/hexo-theme-flatpaper" target="_blank" rel="noopener">Hexo Theme Flatpaper</a>
+          <a href="https://homulilly.com/" target="_blank" rel="noopener">Homulilly</a>
+        </span>
+      </footer>
+    </main>
+    <div class="heat-tooltip" data-heat-tooltip role="status" aria-live="polite" hidden>
+      <strong data-tip-date></strong>
+      <span data-tip-tokens></span>
+      <small data-tip-cost></small>
+    </div>
+    <noscript>
+      <style>
+        .loading-screen {
+          display: none;
+        }
+      </style>
+    </noscript>
+    <script is:inline define:vars={{ thinkingDelay }}>
+      (() => {
+        if (thinkingDelay > 0) {
+          window.setTimeout(() => {
+            document.body.classList.remove("is-loading");
+            document.body.classList.add("is-loaded");
+          }, thinkingDelay);
+        } else {
+          document.body.classList.add("is-loaded");
+        }
+
+        const chartPanel = document.querySelector(".chart-panel");
+        if (!chartPanel) return;
+
+        const mainBoard = document.querySelector("main.board");
+        const curveTitle = chartPanel.querySelector("#curve-title");
+        const chartCaption = chartPanel.querySelector("[data-chart-caption]");
+        const unitButtons = Array.from(chartPanel.querySelectorAll("[data-unit-trigger]"));
+        const rangeButtons = Array.from(chartPanel.querySelectorAll("[data-chart-trigger]"));
+        const chartSvgs = Array.from(chartPanel.querySelectorAll("[data-chart-range]"));
+
+        const weeklyRangeSwitch = chartPanel.querySelector(".weekly-ranges");
+        const dailyRangeSwitch = chartPanel.querySelector(".daily-ranges");
+        const monthlyRangeSwitch = chartPanel.querySelector(".monthly-ranges");
+
+        let currentUnit = "daily";
+        let currentRange = "1m";
+
+        const activateChart = (range, unit) => {
+          currentRange = range;
+          currentUnit = unit;
+
+          // Toggle layout view class
+          if (mainBoard) {
+            mainBoard.classList.toggle("view-daily", unit === "daily");
+          }
+
+          // 1. Update Title text
+          if (curveTitle) {
+            curveTitle.textContent = unit === "weekly" 
+              ? "Weekly Usage Curve" 
+              : unit === "monthly" 
+                ? "Monthly Usage Curve" 
+                : "Daily Usage Curve";
+          }
+
+          // 2. Toggle range switch containers visibility
+          if (weeklyRangeSwitch && dailyRangeSwitch && monthlyRangeSwitch) {
+            weeklyRangeSwitch.style.display = unit === "weekly" ? "inline-flex" : "none";
+            dailyRangeSwitch.style.display = unit === "daily" ? "inline-flex" : "none";
+            monthlyRangeSwitch.style.display = unit === "monthly" ? "inline-flex" : "none";
+          }
+
+          // 3. Toggle range buttons active state
+          rangeButtons.forEach((button) => {
+            const active = button.dataset.chartTrigger === range && button.dataset.chartUnit === unit;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", active ? "true" : "false");
+            if (active && chartCaption) {
+              chartCaption.textContent = button.dataset.rangeCaption || "";
+            }
+          });
+
+          // 4. Toggle unit buttons active state
+          unitButtons.forEach((button) => {
+            const active = button.dataset.unitTrigger === unit;
+            button.classList.toggle("is-active", active);
+            button.setAttribute("aria-pressed", active ? "true" : "false");
+          });
+
+          // 5. Toggle SVGs
+          chartSvgs.forEach((svg) => {
+            const active = svg.dataset.chartRange === range && svg.dataset.chartUnit === unit;
+            svg.classList.toggle("is-active", active);
+            svg.style.display = active ? "block" : "none";
+            svg.dataset.active = active ? "true" : "false";
+          });
+
+          // 6. Synchronize legend visibility states onto the active SVG
+          const activeSvg = chartPanel.querySelector(`.line-chart[data-chart-range="${range}"][data-chart-unit="${unit}"]`);
+          if (activeSvg) {
+            chartPanel.querySelectorAll(".legend-item").forEach((legendItem) => {
+              const series = legendItem.dataset.series;
+              const isPressed = legendItem.getAttribute("aria-pressed") === "true";
+              const selector = series === "total" 
+                ? ".chart-line.total, .chart-area" 
+                : `.chart-line[data-series="${series}"]`;
+              
+              activeSvg.querySelectorAll(selector).forEach((el) => {
+                el.style.display = isPressed ? "" : "none";
+              });
+            });
+          }
+        };
+
+        // Initialize default view
+        activateChart(currentRange, currentUnit);
+
+        chartPanel.addEventListener("click", (event) => {
+          const unitButton = event.target.closest("[data-unit-trigger]");
+          if (unitButton) {
+            const newUnit = unitButton.dataset.unitTrigger;
+            const targetRange = newUnit === "daily" ? "1m" : newUnit === "monthly" ? "all" : currentRange;
+            activateChart(targetRange, newUnit);
+            return;
+          }
+
+          const rangeButton = event.target.closest("[data-chart-trigger]");
+          if (rangeButton) {
+            const newRange = rangeButton.dataset.chartTrigger;
+            activateChart(newRange, currentUnit);
+            return;
+          }
+
+          const legendItem = event.target.closest(".legend-item");
+          if (legendItem) {
+            const series = legendItem.dataset.series;
+            const isCurrentlyPressed = legendItem.getAttribute("aria-pressed") === "true";
+            const newPressedState = !isCurrentlyPressed;
+            
+            legendItem.setAttribute("aria-pressed", newPressedState ? "true" : "false");
+            
+            const selector = series === "total" 
+              ? ".chart-line.total, .chart-area" 
+              : `.chart-line[data-series="${series}"]`;
+            
+            chartPanel.querySelectorAll(selector).forEach((el) => {
+              el.style.display = newPressedState ? "" : "none";
+            });
+          }
+        });
+
+        // Initialize random tilts and scroll reveal for panels below daily dots
+        const targetPanels = Array.from(
+          document.querySelectorAll('.rank-grid .paper-panel, .insight-grid .paper-panel, .table-grid .paper-panel')
+        );
+
+        targetPanels.forEach((panel) => {
+          // Random angle between -2.0deg and 2.0deg
+          const tilt = (Math.random() * 4 - 2).toFixed(2);
+          panel.style.setProperty('--tilt', `${tilt}deg`);
+        });
+
+        const revealObserver = new IntersectionObserver(
+          (entries) => {
+            entries.forEach((entry) => {
+              if (entry.isIntersecting) {
+                entry.target.classList.add('is-revealed');
+                revealObserver.unobserve(entry.target);
+              }
+            });
+          },
+          {
+            threshold: 0.05,
+            rootMargin: '0px 0px -20px 0px'
+          }
+        );
+
+        targetPanels.forEach((panel) => {
+          revealObserver.observe(panel);
+        });
+
+        // Scroll the daily dots heatmap to the rightmost (newest dates) on load
+        const heatmap = document.querySelector(".daily-heatmap");
+        if (heatmap) {
+          heatmap.scrollLeft = heatmap.scrollWidth;
+        }
+
+        // Custom tooltip for daily dots: date, token usage and cost
+        const tooltip = document.querySelector("[data-heat-tooltip]");
+        if (heatmap && tooltip) {
+          const tipDate = tooltip.querySelector("[data-tip-date]");
+          const tipTokens = tooltip.querySelector("[data-tip-tokens]");
+          const tipCost = tooltip.querySelector("[data-tip-cost]");
+
+          const positionTooltip = (dot) => {
+            const rect = dot.getBoundingClientRect();
+            const tipRect = tooltip.getBoundingClientRect();
+            let left = rect.left + rect.width / 2 - tipRect.width / 2;
+            left = Math.max(8, Math.min(left, window.innerWidth - tipRect.width - 8));
+            let top = rect.top - tipRect.height - 10;
+            if (top < 8) {
+              top = rect.bottom + 10;
+            }
+            tooltip.style.left = `${left}px`;
+            tooltip.style.top = `${top}px`;
+          };
+
+          const showTooltip = (dot) => {
+            tipDate.textContent = dot.dataset.date || "";
+            tipTokens.textContent = dot.dataset.tokens || "";
+            tipCost.textContent = dot.dataset.cost || "";
+            tooltip.hidden = false;
+            tooltip.classList.add("is-visible");
+            positionTooltip(dot);
+          };
+
+          const hideTooltip = () => {
+            tooltip.classList.remove("is-visible");
+          };
+
+          heatmap.addEventListener("pointerover", (event) => {
+            const dot = event.target.closest(".heat-dot");
+            if (dot) showTooltip(dot);
+          });
+          heatmap.addEventListener("pointerout", (event) => {
+            const dot = event.target.closest(".heat-dot");
+            if (dot && !heatmap.contains(event.relatedTarget)) hideTooltip();
+          });
+          heatmap.addEventListener("focusin", (event) => {
+            const dot = event.target.closest(".heat-dot");
+            if (dot) showTooltip(dot);
+          });
+          heatmap.addEventListener("focusout", hideTooltip);
+          heatmap.addEventListener("scroll", hideTooltip, { passive: true });
+        }
+      })();
+    </script>
+  </body>
+</html>
