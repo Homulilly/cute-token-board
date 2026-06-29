@@ -1640,6 +1640,10 @@ td:not(:first-child) {
     font-size: 15px;
   }
 
+  .hero-sticker {
+    display: none;
+  }
+
   .record-list,
   .token-breakdown {
     grid-template-columns: 1fr;
