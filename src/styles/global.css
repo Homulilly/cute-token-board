@@ -65,10 +65,15 @@ body.is-loading {
 
 .loading-screen {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   z-index: 9999;
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   color: var(--green-strong);
   background:
     linear-gradient(90deg, rgba(111, 166, 124, 0.05) 1px, transparent 1px) 0 0 / 32px 32px,
@@ -1635,12 +1640,15 @@ td:not(:first-child) {
     font-size: 15px;
   }
 
-  .hero-metrics,
-  .kpi-grid,
-  .device-stats,
   .record-list,
   .token-breakdown {
     grid-template-columns: 1fr;
+  }
+
+  .hero-metrics,
+  .kpi-grid,
+  .device-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .section-head,
