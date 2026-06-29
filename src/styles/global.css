@@ -205,6 +205,8 @@ body.is-loaded .board > *:nth-child(9) { animation-delay: 0.98s; }
 .hero-paper,
 .kpi-card {
   position: relative;
+  width: 100%;
+  min-width: 0;
   border: 2px solid var(--line);
   border-radius: 16px;
   background: var(--paper);
@@ -1517,6 +1519,7 @@ dd {
 }
 
 .table-wrap {
+  min-width: 0;
   overflow-x: auto;
 }
 
@@ -1734,6 +1737,62 @@ td:not(:first-child) {
 
   .agent-list em {
     grid-column: 1 / -1;
+  }
+
+  .table-panel,
+  .table-wrap {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .table-panel {
+    overflow: hidden;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    min-width: 0;
+    table-layout: fixed;
+  }
+
+  th,
+  td {
+    padding: 10px 3px;
+    font-size: 12px;
+  }
+
+  th:nth-child(1),
+  td:nth-child(1) {
+    width: 46%;
+  }
+
+  th:nth-child(2),
+  td:nth-child(2),
+  th:nth-child(3),
+  td:nth-child(3),
+  th:nth-child(4),
+  td:nth-child(4) {
+    width: 18%;
+  }
+
+  td:first-child {
+    display: table-cell !important;
+    white-space: nowrap;
+  }
+
+  td:first-child .icon-model {
+    width: 14px !important;
+    height: 14px !important;
+    margin-right: 4px !important;
+  }
+
+  td:first-child span {
+    overflow: visible;
+    text-overflow: clip;
+    white-space: nowrap;
   }
 }
 
