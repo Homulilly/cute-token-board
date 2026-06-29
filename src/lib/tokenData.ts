@@ -263,7 +263,8 @@ export function getDevicesConfig(): DeviceConfig[] {
     usedKeys.add(key);
 
     const envUrlName = `TOKEN_URL_${key.toUpperCase()}`;
-    let pathOrUrl = process.env[envUrlName]?.trim();
+    const env = import.meta.env as Record<string, string | undefined>;
+    let pathOrUrl = (env[envUrlName] || process.env[envUrlName])?.trim();
 
     if (!pathOrUrl) {
       pathOrUrl = `data/token-${key}.json`;
