@@ -605,11 +605,11 @@ const getAgentIcon = (name: string): string => {
           <dl class="record-list weekly-only">
             <div>
               <dt>Peak Week</dt>
-              <dd>{board.weekly.records.peakWeek.label}</dd>
+              <dd>{board.weekly.records.peakWeek.label} · {formatCompact(board.weekly.records.peakWeek.totalTokens)}</dd>
             </div>
             <div>
               <dt>Peak Month</dt>
-              <dd>{board.records.peakMonth.label}</dd>
+              <dd>{board.records.peakMonth.label} · {formatCompact(board.records.peakMonth.totalTokens)}</dd>
             </div>
             <div>
               <dt>Longest Streak</dt>
@@ -627,11 +627,11 @@ const getAgentIcon = (name: string): string => {
           <dl class="record-list daily-only">
             <div>
               <dt>Peak Day</dt>
-              <dd>{board.daily.records.peakWeek.label}</dd>
+              <dd>{board.daily.records.peakWeek.label} · {formatCompact(board.daily.records.peakWeek.totalTokens)}</dd>
             </div>
             <div>
               <dt>Peak Month</dt>
-              <dd>{board.records.peakMonth.label}</dd>
+              <dd>{board.records.peakMonth.label} · {formatCompact(board.records.peakMonth.totalTokens)}</dd>
             </div>
             <div>
               <dt>Longest Streak</dt>
@@ -649,7 +649,7 @@ const getAgentIcon = (name: string): string => {
           <dl class="record-list monthly-only">
             <div>
               <dt>Peak Month</dt>
-              <dd>{board.monthlyView.records.peakWeek.label}</dd>
+              <dd>{board.monthlyView.records.peakWeek.label} · {formatCompact(board.monthlyView.records.peakWeek.totalTokens)}</dd>
             </div>
             <div>
               <dt>Latest Month</dt>
