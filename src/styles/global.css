@@ -1658,14 +1658,14 @@ td:not(:first-child) {
     display: none;
   }
 
-  .record-list,
-  .token-breakdown {
+  .record-list {
     grid-template-columns: 1fr;
   }
 
   .hero-metrics,
   .kpi-grid,
-  .device-stats {
+  .device-stats,
+  .token-breakdown {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -1714,13 +1714,7 @@ td:not(:first-child) {
   }
 
   .month-strip {
-    overflow-x: auto;
-    justify-content: flex-start;
-    padding-bottom: 4px;
-  }
-
-  .month-strip span {
-    flex: 0 0 auto;
+    display: none;
   }
 
   .rank-list li {

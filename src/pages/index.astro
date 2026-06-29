@@ -55,6 +55,10 @@ const defaultChartRange = "1m";
 const defaultChart = board.daily.chartRanges.find((range) => range.key === defaultChartRange) || board.daily.chartRanges[0];
 const sourceLabel =
   board.sourceMode === "remote" ? "Remote Data" : board.sourceMode === "mixed" ? "Mixed Data" : "Local Data";
+const formatHeatMonthLabel = (monthKey: string) => {
+  const monthIndex = Number(monthKey.slice(5, 7)) - 1;
+  return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][monthIndex] || monthKey;
+};
 const displayModelName = (name: string) =>
   name
     .replace(/[-_.]?(?:20\d{6}|20\d{2}[-_.]\d{2}[-_.]\d{2})$/u, "")
@@ -429,7 +433,9 @@ const getAgentIcon = (name: string): string => {
           ))}
         </div>
         <div class="month-strip" aria-hidden="true">
-          {[...new Set(board.dailyHeatmap.map((day) => day.monthKey))].map((month) => <span>{month}</span>)}
+          {[...new Set(board.dailyHeatmap.map((day) => day.monthKey))].map((month) => (
+            <span title={month}>{formatHeatMonthLabel(month)}</span>
+          ))}
         </div>
       </section>
 
