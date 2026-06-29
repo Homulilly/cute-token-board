@@ -751,6 +751,7 @@ const getAgentIcon = (name: string): string => {
               <p class="eyebrow">Agents</p>
               <h2 class="weekly-only">Agent Active Weeks</h2>
               <h2 class="daily-only">Agent Active Days</h2>
+              <h2 class="monthly-only">Agent Active Months</h2>
             </div>
           </div>
           <ol class="agent-list weekly-only">
@@ -773,6 +774,18 @@ const getAgentIcon = (name: string): string => {
                   <span>{agent.name}</span>
                 </strong>
                 <span>{agent.activeWeeks} days</span>
+                <em>Touched {formatCompact(agent.tokenTouch)}</em>
+              </li>
+            ))}
+          </ol>
+          <ol class="agent-list monthly-only">
+            {board.monthlyView.topAgents.map((agent) => (
+              <li>
+                <strong style="display: flex; align-items: center;">
+                  <Fragment set:html={getAgentIcon(agent.name)} />
+                  <span>{agent.name}</span>
+                </strong>
+                <span>{agent.activeWeeks} months</span>
                 <em>Touched {formatCompact(agent.tokenTouch)}</em>
               </li>
             ))}
