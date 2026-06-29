@@ -792,10 +792,24 @@ const getAgentIcon = (name: string): string => {
 
         let currentUnit = "daily";
         let currentRange = "1m";
+        const defaultRanges = {
+          daily: "1m",
+          weekly: "1m",
+          monthly: "all"
+        };
+        const selectedRanges = { ...defaultRanges };
+
+        const getValidRange = (unit, range) => {
+          const requestedRange = range || defaultRanges[unit] || "1m";
+          const hasChart = chartPanel.querySelector(`.line-chart[data-chart-range="${requestedRange}"][data-chart-unit="${unit}"]`);
+          return hasChart ? requestedRange : defaultRanges[unit] || "1m";
+        };
 
         const activateChart = (range, unit) => {
-          currentRange = range;
+          const activeRange = getValidRange(unit, range);
+          currentRange = activeRange;
           currentUnit = unit;
+          selectedRanges[unit] = activeRange;
 
           // Toggle layout view class
           if (mainBoard) {
@@ -820,7 +834,7 @@ const getAgentIcon = (name: string): string => {
 
           // 3. Toggle range buttons active state
           rangeButtons.forEach((button) => {
-            const active = button.dataset.chartTrigger === range && button.dataset.chartUnit === unit;
+            const active = button.dataset.chartTrigger === activeRange && button.dataset.chartUnit === unit;
             button.classList.toggle("is-active", active);
             button.setAttribute("aria-pressed", active ? "true" : "false");
             if (active && chartCaption) {
@@ -837,14 +851,14 @@ const getAgentIcon = (name: string): string => {
 
           // 5. Toggle SVGs
           chartSvgs.forEach((svg) => {
-            const active = svg.dataset.chartRange === range && svg.dataset.chartUnit === unit;
+            const active = svg.dataset.chartRange === activeRange && svg.dataset.chartUnit === unit;
             svg.classList.toggle("is-active", active);
             svg.style.display = active ? "block" : "none";
             svg.dataset.active = active ? "true" : "false";
           });
 
           // 6. Synchronize legend visibility states onto the active SVG
-          const activeSvg = chartPanel.querySelector(`.line-chart[data-chart-range="${range}"][data-chart-unit="${unit}"]`);
+          const activeSvg = chartPanel.querySelector(`.line-chart[data-chart-range="${activeRange}"][data-chart-unit="${unit}"]`);
           if (activeSvg) {
             chartPanel.querySelectorAll(".legend-item").forEach((legendItem) => {
               const series = legendItem.dataset.series;
@@ -867,7 +881,7 @@ const getAgentIcon = (name: string): string => {
           const unitButton = event.target.closest("[data-unit-trigger]");
           if (unitButton) {
             const newUnit = unitButton.dataset.unitTrigger;
-            const targetRange = newUnit === "daily" ? "1m" : newUnit === "monthly" ? "all" : currentRange;
+            const targetRange = selectedRanges[newUnit] || defaultRanges[newUnit] || currentRange;
             activateChart(targetRange, newUnit);
             return;
           }
