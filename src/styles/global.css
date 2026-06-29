@@ -642,7 +642,7 @@ h2 {
   opacity: 1 !important;
   transform: none !important;
   background: linear-gradient(90deg, #c45468, #f0a23a, #2f8f83, #2b70ab, #705ec7, #c45468);
-  background-size: 240% 100%;
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -651,7 +651,7 @@ h2 {
 
 @keyframes compact-unit-rainbow {
   from {
-    background-position: 240% 0;
+    background-position: 200% 0;
   }
 
   to {
