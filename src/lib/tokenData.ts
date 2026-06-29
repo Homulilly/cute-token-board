@@ -520,6 +520,24 @@ function buildWeekRange(weeks: UsageWeek[]): string[] {
   return range;
 }
 
+function buildDayRange(days: UsageWeek[]): string[] {
+  const activePeriods = days.map((day) => day.period).sort();
+
+  if (!activePeriods.length) {
+    return [];
+  }
+
+  const start = parsePeriod(activePeriods[0]);
+  const end = parsePeriod(activePeriods[activePeriods.length - 1]);
+  const range: string[] = [];
+
+  for (let cursor = start; cursor <= end; cursor = addDays(cursor, 1)) {
+    range.push(toPeriod(cursor));
+  }
+
+  return range;
+}
+
 function buildMonthly(weeks: UsageWeek[]): MonthlySummary[] {
   const map = new Map<string, MonthlySummary>();
 
@@ -1100,8 +1118,8 @@ export async function buildTokenBoard(): Promise<TokenBoardData> {
 
   const sourceMode = sources.every((source) => source === "remote") ? "remote" : sources.every((source) => source === "local") ? "local" : "mixed";
 
-  const allDayPeriods = devicesConfig.flatMap((c) => deviceRawDays[c.key].map((d) => d.period));
-  const dayPeriods = [...new Set(allDayPeriods)].sort();
+  const allRawDays = devicesConfig.flatMap((c) => deviceRawDays[c.key]);
+  const dayPeriods = buildDayRange(allRawDays);
   const mergedDays = dayPeriods.map((period) => {
     const list = devicesConfig.map((c) => deviceDailyMaps[c.key].get(period) || emptyWeek(period, c.key));
     return mergeDays(period, list, "merged");
