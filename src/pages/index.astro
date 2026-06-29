@@ -56,6 +56,10 @@ const defaultChartRange = "1m";
 const defaultChart = board.daily.chartRanges.find((range) => range.key === defaultChartRange) || board.daily.chartRanges[0];
 const sourceLabel =
   board.sourceMode === "remote" ? "Remote Data" : board.sourceMode === "mixed" ? "Mixed Data" : "Local Data";
+const formatCompactHeroKpi = (value: number): string =>
+  formatCompact(value).replace(/([MB])$/u, '<span class="compact-unit-rainbow">$1</span>');
+const formatSignedCompactHeroKpi = (value: number): string =>
+  formatSignedCompact(value).replace(/([MB])$/u, '<span class="compact-unit-rainbow">$1</span>');
 const formatHeatMonthLabel = (monthKey: string) => {
   const monthIndex = Number(monthKey.slice(5, 7)) - 1;
   return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][monthIndex] || monthKey;
@@ -148,7 +152,7 @@ const getAgentIcon = (name: string): string => {
           <div class="hero-metrics" aria-label="Overview">
             <div>
               <span>Total Tokens</span>
-              <strong>{formatCompact(board.totals.totalTokens)}</strong>
+              <strong><Fragment set:html={formatCompactHeroKpi(board.totals.totalTokens)} /></strong>
             </div>
             <div>
               <span>Total Cost</span>
@@ -180,9 +184,9 @@ const getAgentIcon = (name: string): string => {
           <span class="weekly-only">Latest Week</span>
           <span class="daily-only">Latest Day</span>
           <span class="monthly-only">Latest Month</span>
-          <strong class="weekly-only">{formatCompact(board.weekly.records.latestWeek.totalTokens)}</strong>
-          <strong class="daily-only">{formatCompact(board.daily.records.latestWeek.totalTokens)}</strong>
-          <strong class="monthly-only">{formatCompact(board.monthlyView.records.latestWeek.totalTokens)}</strong>
+          <strong class="weekly-only"><Fragment set:html={formatCompactHeroKpi(board.weekly.records.latestWeek.totalTokens)} /></strong>
+          <strong class="daily-only"><Fragment set:html={formatCompactHeroKpi(board.daily.records.latestWeek.totalTokens)} /></strong>
+          <strong class="monthly-only"><Fragment set:html={formatCompactHeroKpi(board.monthlyView.records.latestWeek.totalTokens)} /></strong>
           <small class="weekly-only">{board.weekly.records.latestWeek.label}</small>
           <small class="daily-only">{board.daily.records.latestWeek.label}</small>
           <small class="monthly-only">{board.monthlyView.records.latestWeek.label}</small>
@@ -191,12 +195,12 @@ const getAgentIcon = (name: string): string => {
           <span class="weekly-only">Week Change</span>
           <span class="daily-only">Day Change</span>
           <span class="monthly-only">Month Change</span>
-          <strong class:list={["weekly-only", latestDeltaWeekly >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaWeekly)}</strong>
-          <strong class:list={["daily-only", latestDeltaDaily >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaDaily)}</strong>
-          <strong class:list={["monthly-only", latestDeltaMonthly >= 0 ? "up" : "down"]}>{formatSignedCompact(latestDeltaMonthly)}</strong>
-          <small class="weekly-only">vs {board.weekly.records.previousWeek.label} · {formatCompact(board.weekly.records.previousWeek.totalTokens)} token</small>
-          <small class="daily-only">vs {board.daily.records.previousWeek.label} · {formatCompact(board.daily.records.previousWeek.totalTokens)} token</small>
-          <small class="monthly-only">vs {board.monthlyView.records.previousWeek.label} · {formatCompact(board.monthlyView.records.previousWeek.totalTokens)} token</small>
+          <strong class:list={["weekly-only", latestDeltaWeekly >= 0 ? "up" : "down"]}><Fragment set:html={formatSignedCompactHeroKpi(latestDeltaWeekly)} /></strong>
+          <strong class:list={["daily-only", latestDeltaDaily >= 0 ? "up" : "down"]}><Fragment set:html={formatSignedCompactHeroKpi(latestDeltaDaily)} /></strong>
+          <strong class:list={["monthly-only", latestDeltaMonthly >= 0 ? "up" : "down"]}><Fragment set:html={formatSignedCompactHeroKpi(latestDeltaMonthly)} /></strong>
+          <small class="weekly-only">vs {board.weekly.records.previousWeek.label} · <Fragment set:html={formatCompactHeroKpi(board.weekly.records.previousWeek.totalTokens)} /> token</small>
+          <small class="daily-only">vs {board.daily.records.previousWeek.label} · <Fragment set:html={formatCompactHeroKpi(board.daily.records.previousWeek.totalTokens)} /> token</small>
+          <small class="monthly-only">vs {board.monthlyView.records.previousWeek.label} · <Fragment set:html={formatCompactHeroKpi(board.monthlyView.records.previousWeek.totalTokens)} /> token</small>
         </article>
         <article class="kpi-card accent-blue">
           <span class="weekly-only">Peak Week</span>
@@ -205,9 +209,9 @@ const getAgentIcon = (name: string): string => {
           <strong class="weekly-only">{board.weekly.records.peakWeek.label}</strong>
           <strong class="daily-only">{board.daily.records.peakWeek.label}</strong>
           <strong class="monthly-only">{board.monthlyView.records.peakWeek.label}</strong>
-          <small class="weekly-only">{formatCompact(board.weekly.records.peakWeek.totalTokens)} token</small>
-          <small class="daily-only">{formatCompact(board.daily.records.peakWeek.totalTokens)} token</small>
-          <small class="monthly-only">{formatCompact(board.monthlyView.records.peakWeek.totalTokens)} token</small>
+          <small class="weekly-only"><Fragment set:html={formatCompactHeroKpi(board.weekly.records.peakWeek.totalTokens)} /> token</small>
+          <small class="daily-only"><Fragment set:html={formatCompactHeroKpi(board.daily.records.peakWeek.totalTokens)} /> token</small>
+          <small class="monthly-only"><Fragment set:html={formatCompactHeroKpi(board.monthlyView.records.peakWeek.totalTokens)} /> token</small>
         </article>
         <article class="kpi-card accent-pink">
           <span>Cache Share</span>
@@ -605,11 +609,11 @@ const getAgentIcon = (name: string): string => {
           <dl class="record-list weekly-only">
             <div>
               <dt>Peak Week</dt>
-              <dd>{board.weekly.records.peakWeek.label} · {formatCompact(board.weekly.records.peakWeek.totalTokens)}</dd>
+              <dd>{board.weekly.records.peakWeek.label} · <Fragment set:html={formatCompactHeroKpi(board.weekly.records.peakWeek.totalTokens)} /></dd>
             </div>
             <div>
               <dt>Peak Month</dt>
-              <dd>{board.records.peakMonth.label} · {formatCompact(board.records.peakMonth.totalTokens)}</dd>
+              <dd>{board.records.peakMonth.label} · <Fragment set:html={formatCompactHeroKpi(board.records.peakMonth.totalTokens)} /></dd>
             </div>
             <div>
               <dt>Longest Streak</dt>
@@ -617,21 +621,21 @@ const getAgentIcon = (name: string): string => {
             </div>
             <div>
               <dt>Biggest Jump</dt>
-              <dd>{board.weekly.records.biggestJump.label} · {formatSignedCompact(board.weekly.records.biggestJump.deltaTokens)}</dd>
+              <dd>{board.weekly.records.biggestJump.label} · <Fragment set:html={formatSignedCompactHeroKpi(board.weekly.records.biggestJump.deltaTokens)} /></dd>
             </div>
             <div>
               <dt>Active Week Avg</dt>
-              <dd>{formatCompact(board.weekly.records.averageActiveWeekTokens)}</dd>
+              <dd><Fragment set:html={formatCompactHeroKpi(board.weekly.records.averageActiveWeekTokens)} /></dd>
             </div>
           </dl>
           <dl class="record-list daily-only">
             <div>
               <dt>Peak Day</dt>
-              <dd>{board.daily.records.peakWeek.label} · {formatCompact(board.daily.records.peakWeek.totalTokens)}</dd>
+              <dd>{board.daily.records.peakWeek.label} · <Fragment set:html={formatCompactHeroKpi(board.daily.records.peakWeek.totalTokens)} /></dd>
             </div>
             <div>
               <dt>Peak Month</dt>
-              <dd>{board.records.peakMonth.label} · {formatCompact(board.records.peakMonth.totalTokens)}</dd>
+              <dd>{board.records.peakMonth.label} · <Fragment set:html={formatCompactHeroKpi(board.records.peakMonth.totalTokens)} /></dd>
             </div>
             <div>
               <dt>Longest Streak</dt>
@@ -639,17 +643,17 @@ const getAgentIcon = (name: string): string => {
             </div>
             <div>
               <dt>Biggest Jump</dt>
-              <dd>{board.daily.records.biggestJump.label} · {formatSignedCompact(board.daily.records.biggestJump.deltaTokens)}</dd>
+              <dd>{board.daily.records.biggestJump.label} · <Fragment set:html={formatSignedCompactHeroKpi(board.daily.records.biggestJump.deltaTokens)} /></dd>
             </div>
             <div>
               <dt>Active Day Avg</dt>
-              <dd>{formatCompact(board.daily.records.averageActiveWeekTokens)}</dd>
+              <dd><Fragment set:html={formatCompactHeroKpi(board.daily.records.averageActiveWeekTokens)} /></dd>
             </div>
           </dl>
           <dl class="record-list monthly-only">
             <div>
               <dt>Peak Month</dt>
-              <dd>{board.monthlyView.records.peakWeek.label} · {formatCompact(board.monthlyView.records.peakWeek.totalTokens)}</dd>
+              <dd>{board.monthlyView.records.peakWeek.label} · <Fragment set:html={formatCompactHeroKpi(board.monthlyView.records.peakWeek.totalTokens)} /></dd>
             </div>
             <div>
               <dt>Latest Month</dt>
@@ -661,11 +665,11 @@ const getAgentIcon = (name: string): string => {
             </div>
             <div>
               <dt>Biggest Jump</dt>
-              <dd>{board.monthlyView.records.biggestJump.label} · {formatSignedCompact(board.monthlyView.records.biggestJump.deltaTokens)}</dd>
+              <dd>{board.monthlyView.records.biggestJump.label} · <Fragment set:html={formatSignedCompactHeroKpi(board.monthlyView.records.biggestJump.deltaTokens)} /></dd>
             </div>
             <div>
               <dt>Active Month Avg</dt>
-              <dd>{formatCompact(board.monthlyView.records.averageActiveWeekTokens)}</dd>
+              <dd><Fragment set:html={formatCompactHeroKpi(board.monthlyView.records.averageActiveWeekTokens)} /></dd>
             </div>
           </dl>
         </article>

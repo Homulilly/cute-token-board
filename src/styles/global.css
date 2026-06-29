@@ -434,7 +434,7 @@ h2 {
   z-index: 10;
 }
 
-.hero-metrics div:hover span {
+.hero-metrics div:hover > span {
   max-height: 0;
   margin-bottom: 0;
   color: var(--ink-soft);
@@ -584,7 +584,7 @@ h2 {
     transform: scale(1.2);
   }
 }
-.kpi-card:hover span {
+.kpi-card:hover > span {
   max-height: 0;
   margin-bottom: 0;
   color: var(--ink-soft) !important;
@@ -628,6 +628,35 @@ h2 {
   text-align: left;
   transform-origin: center;
   transition: transform 0.42s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease, text-align 0.3s ease;
+}
+
+.hero-metrics .compact-unit-rainbow,
+.kpi-card .compact-unit-rainbow,
+.record-list .compact-unit-rainbow {
+  display: inline !important;
+  max-height: none !important;
+  color: #c45468;
+  font-size: 0.82em;
+  font-weight: 900;
+  margin-left: 0.03em;
+  opacity: 1 !important;
+  transform: none !important;
+  background: linear-gradient(90deg, #c45468, #f0a23a, #2f8f83, #2b70ab, #705ec7, #c45468);
+  background-size: 240% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: compact-unit-rainbow 2.8s linear infinite;
+}
+
+@keyframes compact-unit-rainbow {
+  from {
+    background-position: 240% 0;
+  }
+
+  to {
+    background-position: 0 0;
+  }
 }
 
 .kpi-card small {
