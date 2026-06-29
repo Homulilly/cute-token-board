@@ -65,15 +65,11 @@ body.is-loading {
 
 .loading-screen {
   position: fixed;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   min-height: 100vh;
   min-height: 100dvh;
   z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   color: var(--green-strong);
   background:
     linear-gradient(90deg, rgba(111, 166, 124, 0.05) 1px, transparent 1px) 0 0 / 32px 32px,
@@ -84,11 +80,18 @@ body.is-loading {
 }
 
 .loading-screen span {
+  position: fixed;
+  top: var(--loading-center-y, 50vh);
+  top: var(--loading-center-y, 50dvh);
+  left: var(--loading-center-x, 50vw);
+  width: max-content;
   display: inline-flex;
   align-items: baseline;
   font-family: var(--font-display);
   font-size: clamp(28px, 6vw, 54px);
   line-height: 1;
+  text-align: center;
+  transform: translate(-50%, -50%);
 }
 
 .loading-screen i {

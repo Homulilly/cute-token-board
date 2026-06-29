@@ -745,10 +745,26 @@ const getAgentIcon = (name: string): string => {
     </noscript>
     <script is:inline define:vars={{ thinkingDelay }}>
       (() => {
+        const syncLoadingCenter = () => {
+          const viewport = window.visualViewport;
+          const centerX = viewport ? viewport.offsetLeft + viewport.width / 2 : window.innerWidth / 2;
+          const centerY = viewport ? viewport.offsetTop + viewport.height / 2 : window.innerHeight / 2;
+          document.documentElement.style.setProperty("--loading-center-x", `${centerX}px`);
+          document.documentElement.style.setProperty("--loading-center-y", `${centerY}px`);
+        };
+
         if (thinkingDelay > 0) {
+          syncLoadingCenter();
+          window.addEventListener("resize", syncLoadingCenter, { passive: true });
+          window.visualViewport?.addEventListener("resize", syncLoadingCenter, { passive: true });
+          window.visualViewport?.addEventListener("scroll", syncLoadingCenter, { passive: true });
+
           window.setTimeout(() => {
             document.body.classList.remove("is-loading");
             document.body.classList.add("is-loaded");
+            window.removeEventListener("resize", syncLoadingCenter);
+            window.visualViewport?.removeEventListener("resize", syncLoadingCenter);
+            window.visualViewport?.removeEventListener("scroll", syncLoadingCenter);
           }, thinkingDelay);
         } else {
           document.body.classList.add("is-loaded");
