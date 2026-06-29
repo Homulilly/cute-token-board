@@ -248,6 +248,10 @@ body.is-loaded .board > *:nth-child(9) { animation-delay: 0.98s; }
   z-index: 1;
 }
 
+.hero-copy {
+  min-width: 0;
+}
+
 .tape {
   position: absolute;
   z-index: 3;
@@ -362,11 +366,14 @@ h2 {
 
 .hero-metrics {
   display: grid;
-  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  width: 100%;
+  min-width: 0;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 14px;
 }
 
 .hero-metrics div {
+  min-width: 0;
   display: grid;
   align-content: center;
   justify-items: start;
@@ -1609,6 +1616,7 @@ td:not(:first-child) {
     width: 210px;
   }
 
+  .hero-metrics,
   .kpi-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
