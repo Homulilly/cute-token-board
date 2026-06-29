@@ -95,7 +95,8 @@ public/images/favicon.webp
 
 ### 安装依赖
 ```bash
-pnpm install
+pnpm install --frozen-lockfile
+pnpm approve-builds
 ```
 
 ### 启动本地开发服务器
